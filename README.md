@@ -1,4 +1,4 @@
-# SFWRENG/CS 3SH3 — Assignment 3: The Sleeping Teaching Assistant
+# COMPSCI 3SH3 — Assignment 3: The Sleeping Teaching Assistant
 
 A solution to the Sleeping TA problem, written with POSIX threads, mutex locks and semaphores.
 
