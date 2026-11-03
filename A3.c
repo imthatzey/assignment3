@@ -53,6 +53,8 @@ void *student_thread(void *arg) {
         }
     }
     printf("Student %d is done and leaves.\n", id);
+    
+    //pthread_exit?
     return NULL;
 }
 
@@ -75,20 +77,91 @@ void *ta_thread(void *arg) {
         random_sleep(MAX_HELP_MS);             // helping them
         sem_post(&help_done_sem);              // tell the student help is finished
     }
+    
+    //pthread_exit?
 }
 
 int main(int argc, char *argv[]) {
-    /* TODO:
-     * 1. Check that exactly one argument was given (the number of students, n).
-     *    If not, print a usage message and return 1.
-     * 2. Convert it to a number with atoi. If n < 1, print an error and return 1.
-     * 3. Seed the random numbers once: srand(time(NULL));
-     * 4. Make an array of student IDs (1..n). Pass &ids[i] to each thread, not &i.
-     * 5. Initialise all three semaphores to 0 and the mutex.
-     * 6. Create the TA thread (ta_thread) and n student threads (student_thread).
-     * 7. Wait for every student thread to finish (pthread_join).
-     * 8. Stop the TA (pthread_cancel), then join it.
-     * 9. Destroy the semaphores and the mutex, and return 0.
-     */
+    // Check that exactly one argument was given (the number of students, n). If not, print a usage message and return 1.
+    if (argc != 2) {
+        printf("You did not provide the right arguments. Please only enter the number of students. \n");
+        return 1;
+    }
+
+
+    // convert the input to a number, if it's not valid print an error
+    int n_students = atoi(argv[1]);
+    if (n_students < 1){
+        printf("The number of students cannot be less than 1. \n");
+        return 1;
+    }
+
+
+    // seed the random numbers
+    srand(time(NULL));
+    
+
+    // initialise all three semaphores to 0 and the mutex
+    if (sem_init(&students_sem, 0, 1) != 0){
+        printf("Error in initializing semaphore \n");
+        return 1;
+    }
+    
+    if (sem_init(&ta_sem, 0, 1) != 0){
+        printf("Error in initializing semaphore \n");
+        return 1;
+    }
+    
+    if (sem_init(&help_done_sem, 0, 1) != 0){
+        printf("Error in initializing semaphore \n");
+        return 1;
+    }
+    
+    if (pthread_mutex_init (&chair_mutex, NULL) != 0){
+        printf("Error in initializing mutex \n");
+        return 1;
+    }
+    
+    // create the TA thread and student threads
+    pthread_t tid[1 + n_students];
+    pthread_attr_t attr;
+    
+    pthread_attr_init(&attr);
+    
+    if (pthread_create(&tid[0], &attr, ta_thread, argv[1]) != 0){
+        printf("Error creating ta_thread \n");
+        return 1;
+    }
+    
+    for(int i = 1; i < n_students; i++){
+        if (pthread_create(&tid[i], &attr, student_thread, argv[1]) != 0){
+            printf("Error creating student_thread %d \n", i);
+            return 1;
+        }
+    }
+    
+    // wait for every student thread to finish
+    for (int i = 1; i < n_students + 1; i++){
+        pthread_join(tid[i], NULL);
+    }
+    
+    
+    // stop the TA, then join it.
+    if (pthread_cancel(tid[0]) != 0){
+        printf("Unable to cancel ta_thread \n");
+        return 1;
+    }
+    
+    pthread_join(tid[0], NULL);
+    
+    
+    // destroy the semaphores and the mutex, and return 0.
+    sem_destroy(&students_sem);
+    sem_destroy(&ta_sem);
+    sem_destroy(&help_done_sem);
+
+    pthread_mutex_destroy(&chair_mutex);
+    
+     
     return 0;
 }
