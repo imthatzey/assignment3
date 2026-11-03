@@ -29,4 +29,4 @@ Unnamed semaphores (`sem_init`) do not work on macOS, so run the program on Linu
 
 ### Bakhtawar
 
--
+- Wrote the main() function
